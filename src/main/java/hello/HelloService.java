@@ -16,18 +16,11 @@ public class HelloService {
     }
 
     public String hello() {
-        var context = new Observation.Context().put(String.class, "spring");
-        var observation = Observation.start("service.hello", context, observationRegistry);
-        try (var scope = observation.openScope()) {
-            log.debug("Say hello");
-            return "Hello!";
-        }
-        catch (Exception exception) {
-            observation.error(exception);
-            throw exception;
-        }
-        finally {
-            observation.stop();
-        }
+        return Observation.createNotStarted("service.hello", observationRegistry)
+                .lowCardinalityKeyValue("framework", "spring")
+                .observe(() -> {
+                    log.debug("Say hello");
+                    return "Hello!";
+                });
     }
 }

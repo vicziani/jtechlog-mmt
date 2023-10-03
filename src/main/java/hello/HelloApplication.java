@@ -1,11 +1,9 @@
 package hello;
 
-import brave.context.slf4j.MDCScopeDecorator;
-import brave.propagation.CurrentTraceContext;
-import brave.propagation.ThreadLocalCurrentTraceContext;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
+import io.micrometer.observation.aop.ObservedAspect;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -29,21 +27,21 @@ public class HelloApplication {
 		this.helloService = helloService;
 	}
 
-	@GetMapping("/")
-	// @Observed - hogy lehet beüzemelni?
-	public String hello() {
+	@Bean
+	ObservedAspect observedAspect(ObservationRegistry observationRegistry) {
+		return new ObservedAspect(observationRegistry);
+	}
 
-		Observation observation = Observation.start("controller.hello", observationRegistry);
-		try (Observation.Scope scope = observation.openScope()) {
-			return helloService.hello();
-		}
-		catch (Exception exception) {
-			observation.error(exception);
-			throw exception;
-		}
-		finally {
-			observation.stop();
-		}
+	@GetMapping("/")
+	@Observed(name = "controller.hello", contextualName = "controller.hello", lowCardinalityKeyValues = {"framework", "spring"})
+	public String hello() {
+//		return Observation.createNotStarted("controller.hello", observationRegistry)
+//				.lowCardinalityKeyValue("framework", "spring")
+//				.observe(() -> {
+//					return helloService.hello();
+//				});
+
+		return helloService.hello();
 	}
 
 }
